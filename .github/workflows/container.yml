@@ -22,6 +22,9 @@ permissions:
 jobs:
   docker:
     runs-on: ubuntu-latest
+    env:
+      YTDLP_BINARY_PATH: /usr/bin/yt-dlp
+      FFMPEG_BINARY_PATH: /usr/bin/ffmpeg
     steps:
       - uses: docker/metadata-action@v5
         id: meta

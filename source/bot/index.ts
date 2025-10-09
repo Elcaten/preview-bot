@@ -13,9 +13,20 @@ import type {MyContext, Session} from './my-context.ts';
 
 dotenv.config();
 
+const binaryPath = env['YTDLP_BINARY_PATH'];
+const ffmpegPath = env['FFMPEG_BINARY_PATH'];
+
+if (!binaryPath) {
+	throw new Error('You have to provide the ytdlp binary path via environment variable (YTDLP_BINARY_PATH)');
+}
+
+if (!ffmpegPath) {
+	throw new Error('You have to provide the ffmpeg binary path via environment variable (FFMPEG_BINARY_PATH)');
+}
+
 const ytdlp = new YtDlp({
-	binaryPath: '/usr/bin/yt-dlp',
-	ffmpegPath: '/usr/bin/ffmpeg',
+	binaryPath,
+	ffmpegPath,
 });
 
 async function downloadVideo(url: string) {
