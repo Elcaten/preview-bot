@@ -1,16 +1,33 @@
 import { FileAdapter } from "@grammyjs/storage-file";
 import dotenv from "dotenv";
-import { Bot, session } from "grammy";
+import { Bot, InputFile, session } from "grammy";
 import { MenuMiddleware } from "grammy-inline-menu";
+import fs from "node:fs";
 import { env } from "node:process";
 import { generateUpdateMiddleware } from "telegraf-middleware-console-time";
 import { html as format } from "telegram-format";
-import { danceWithFairies, fightDragons } from "../magic.ts";
+import { YtDlp } from "ytdlp-nodejs";
 import { i18n } from "../translation.ts";
 import { menu } from "./menu/index.ts";
 import type { MyContext, Session } from "./my-context.ts";
 
 dotenv.config();
+
+const ytdlp = new YtDlp();
+
+async function downloadVideo(url: string) {
+	try {
+		const output = await ytdlp.downloadAsync(url, {
+			onProgress: () => {
+				// console.log(progress);
+			},
+			output: "./video.file",
+		});
+		console.log("Download completed:", output);
+	} catch (error) {
+		console.error("Error:", error);
+	}
+}
 
 const token = env["BOT_TOKEN"];
 if (!token) {
@@ -35,22 +52,37 @@ if (env["NODE_ENV"] !== "production") {
 	bot.use(generateUpdateMiddleware());
 }
 
-bot.on("message", async (ctx) => {
-	return ctx.reply("hello2");
+bot.on("message::url", async (ctx) => {
+	try {
+		var url = new URL(ctx.message.text ?? "");
+		if (url.hostname.includes("instagram")) {
+			url.hostname = "kkinstagram.com";
+			return ctx.reply(url.toString());
+		}
+		if (url.hostname === "x.com") {
+			await downloadVideo(url.toString());
+			const result = await ctx.replyWithVideo(new InputFile("./video.file"));
+			await new Promise((res, rej) => {
+				fs.unlink("./video.file", (err) => {
+					if (err) {
+						rej(err);
+					} else {
+						res(true);
+					}
+				});
+			});
+			return result;
+		}
+		return ctx.reply("Unsupported URL");
+	} catch (e) {
+		return ctx.reply("Something went wrong");
+	}
 });
 
 bot.command("help", async (ctx) => ctx.reply(ctx.t("help")));
 
 bot.command("magic", async (ctx) => {
-	const combatResult = fightDragons();
-	const fairyThoughts = danceWithFairies();
-
-	let text = "";
-	text += combatResult;
-	text += "\n\n";
-	text += fairyThoughts;
-
-	return ctx.reply(text);
+	return ctx.replyWithVideo(new InputFile("./vid.mp4"));
 });
 
 bot.command("html", async (ctx) => {
