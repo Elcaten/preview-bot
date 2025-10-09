@@ -1,6 +1,7 @@
 FROM docker.io/library/alpine:3.22 AS builder
 RUN apk upgrade --no-cache \
-	&& apk add --no-cache npm
+	&& apk add --no-cache npm \
+	&& apk add --no-cache ffmpeg
 WORKDIR /build
 COPY package.json package-lock.json ./
 RUN npm ci --no-audit --no-fund --no-update-notifier
