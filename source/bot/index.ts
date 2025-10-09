@@ -13,7 +13,10 @@ import type { MyContext, Session } from "./my-context.ts";
 
 dotenv.config();
 
-const ytdlp = new YtDlp();
+const ytdlp = new YtDlp({
+	binaryPath: "/usr/bin/yt-dlp",
+	ffmpegPath: "/usr/bin/ffmpeg",
+});
 
 async function downloadVideo(url: string) {
 	try {
