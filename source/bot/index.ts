@@ -35,6 +35,10 @@ if (env["NODE_ENV"] !== "production") {
 	bot.use(generateUpdateMiddleware());
 }
 
+bot.on("message", async (ctx) => {
+	return ctx.reply("hello2");
+});
+
 bot.command("help", async (ctx) => ctx.reply(ctx.t("help")));
 
 bot.command("magic", async (ctx) => {

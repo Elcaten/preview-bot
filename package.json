@@ -5,6 +5,7 @@
 	"license": "MIT",
 	"scripts": {
 		"start": "tsc && node --enable-source-maps dist/telegram-typescript-bot-template.js",
+		"dev": "tsc-watch --noClear --onSuccess \"node dist/telegram-typescript-bot-template.js\"",
 		"test": "tsc && xo && node --enable-source-maps --test"
 	},
 	"type": "module",
@@ -22,6 +23,7 @@
 	},
 	"devDependencies": {
 		"@types/node": "^22.17.2",
+		"tsc-watch": "^7.2.0",
 		"typescript": "^5.9.2",
 		"xo": "^1.2.2"
 	},
