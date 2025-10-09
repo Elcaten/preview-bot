@@ -15,13 +15,14 @@ dotenv.config();
 
 const binaryPath = env['YTDLP_BINARY_PATH'];
 const ffmpegPath = env['FFMPEG_BINARY_PATH'];
+const downloadsPath = env['DOWNLOADS_PATH'];
 
-if (!binaryPath) {
-	throw new Error('You have to provide the ytdlp binary path via environment variable (YTDLP_BINARY_PATH)');
+if (!downloadsPath) {
+	throw new Error('You have to provide the downloads path via environment variable (DOWNLOADS_PATH)');
 }
 
-if (!ffmpegPath) {
-	throw new Error('You have to provide the ffmpeg binary path via environment variable (FFMPEG_BINARY_PATH)');
+function getVideoFilePath() {
+	return `${downloadsPath}/video.file`;
 }
 
 const ytdlp = new YtDlp({
@@ -31,13 +32,16 @@ const ytdlp = new YtDlp({
 
 async function downloadVideo(url: string) {
 	try {
-		const output = await ytdlp.downloadAsync(url, {
+		const downloadsDir = await fs.promises.readdir(downloadsPath!);
+		await Promise.all(downloadsDir.map(async file =>
+			fs.promises.unlink(`${downloadsPath!}/${file}`)));
+
+		await ytdlp.downloadAsync(url, {
 			onProgress() {
 				// Console.log(progress);
 			},
-			output: './video.file',
+			output: getVideoFilePath(),
 		});
-		console.log('Download completed:', output);
 	} catch (error) {
 		console.error('Error:', error);
 	}
@@ -72,8 +76,8 @@ bot.on('message::url', async ctx => {
 
 		if (url.hostname === 'x.com') {
 			await downloadVideo(url.toString());
-			const result = await ctx.replyWithVideo(new InputFile('./video.file'));
-			await fs.promises.unlink('./video.file');
+			const result = await ctx.replyWithVideo(new InputFile(getVideoFilePath()));
+			await fs.promises.unlink(getVideoFilePath());
 			return result;
 		}
 
