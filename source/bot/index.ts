@@ -76,13 +76,16 @@ bot.on('message::url', async ctx => {
 
 		if (url.hostname === 'x.com') {
 			await downloadVideo(url.toString());
-			const result = await ctx.replyWithVideo(new InputFile(getVideoFilePath()));
-			await fs.promises.unlink(getVideoFilePath());
+			const videoFilePath = getVideoFilePath();
+			console.log('videoFilePath', videoFilePath);
+			const result = await ctx.replyWithVideo(new InputFile(videoFilePath));
+			await fs.promises.unlink(videoFilePath);
 			return result;
 		}
 
 		return await ctx.reply('Unsupported URL');
-	} catch {
+	} catch (error) {
+		console.error('Error on handling update occured', error);
 		return ctx.reply('Something went wrong');
 	}
 });
