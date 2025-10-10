@@ -1,4 +1,6 @@
 import {env} from 'node:process';
+import {execFile} from 'node:child_process';
+import {promisify} from 'node:util';
 import {FileAdapter} from '@grammyjs/storage-file';
 import dotenv from 'dotenv';
 import {Bot, InputFile, session} from 'grammy';
@@ -13,6 +15,11 @@ dotenv.config();
 
 const binaryPath = env['YTDLP_BINARY_PATH'];
 const ffmpegPath = env['FFMPEG_BINARY_PATH'];
+const galleryDlPath = env['GALLERY_DL_BINARY_PATH'];
+
+if (!galleryDlPath) {
+	throw new Error('You have to provide the gallery-dl binary path via environment variable (GALLERY_DL_BINARY_PATH)');
+}
 
 const ytdlp = new YtDlp({
 	binaryPath,
@@ -40,13 +47,32 @@ if (env['NODE_ENV'] !== 'production') {
 
 bot.on('message::url', async ctx => {
 	try {
-		const url = new URL(ctx.message.text ?? '');
-		if (url.hostname.includes('instagram')) {
+		const urlList = ctx.message.text?.split(' ').map(x => {
+			try {
+				return new URL(x);
+			} catch {
+				return undefined;
+			}
+		}).filter(Boolean);
+		const url = new URL(urlList?.[0] ?? '');
+
+		if (url.hostname.endsWith('instagram.com')) {
 			url.hostname = 'kkinstagram.com';
 			return (await ctx.reply(url.toString()));
 		}
 
-		if (url.hostname === 'x.com') {
+		if (url.hostname.endsWith('x.com')) {
+			const execFileAsync = promisify(execFile);
+			const dlGalleryResult = await execFileAsync(galleryDlPath, ['-g', url.toString()]);
+
+			if (dlGalleryResult.stderr) {
+				throw new Error(dlGalleryResult.stderr);
+			}
+
+			return await ctx.reply(dlGalleryResult.stdout);
+		}
+
+		if (url.hostname.endsWith('youtube.com')) {
 			const videoFile = await ytdlp.getFileAsync(url.toString());
 			const result = await ctx.replyWithVideo(new InputFile(videoFile.stream()));
 			return result;
