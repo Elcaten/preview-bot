@@ -1,11 +1,9 @@
-import fs from 'node:fs';
 import {env} from 'node:process';
 import {FileAdapter} from '@grammyjs/storage-file';
 import dotenv from 'dotenv';
 import {Bot, InputFile, session} from 'grammy';
 import {MenuMiddleware} from 'grammy-inline-menu';
 import {generateUpdateMiddleware} from 'telegraf-middleware-console-time';
-import {html as format} from 'telegram-format';
 import {YtDlp} from 'ytdlp-nodejs';
 import {i18n} from '../translation.ts';
 import {menu} from './menu/index.ts';
@@ -15,37 +13,11 @@ dotenv.config();
 
 const binaryPath = env['YTDLP_BINARY_PATH'];
 const ffmpegPath = env['FFMPEG_BINARY_PATH'];
-const downloadsPath = env['DOWNLOADS_PATH'];
-
-if (!downloadsPath) {
-	throw new Error('You have to provide the downloads path via environment variable (DOWNLOADS_PATH)');
-}
-
-function getVideoFilePath() {
-	return `${downloadsPath}/video.file`;
-}
 
 const ytdlp = new YtDlp({
 	binaryPath,
 	ffmpegPath,
 });
-
-async function downloadVideo(url: string) {
-	try {
-		const downloadsDir = await fs.promises.readdir(downloadsPath!);
-		await Promise.all(downloadsDir.map(async file =>
-			fs.promises.unlink(`${downloadsPath!}/${file}`)));
-
-		await ytdlp.downloadAsync(url, {
-			onProgress() {
-				// Console.log(progress);
-			},
-			output: getVideoFilePath(),
-		});
-	} catch (error) {
-		console.error('Error:', error);
-	}
-}
 
 const token = env['BOT_TOKEN'];
 if (!token) {
@@ -75,11 +47,8 @@ bot.on('message::url', async ctx => {
 		}
 
 		if (url.hostname === 'x.com') {
-			await downloadVideo(url.toString());
-			const videoFilePath = getVideoFilePath();
-			console.log('videoFilePath', videoFilePath);
-			const result = await ctx.replyWithVideo(new InputFile(videoFilePath));
-			await fs.promises.unlink(videoFilePath);
+			const videoFile = await ytdlp.getFileAsync(url.toString());
+			const result = await ctx.replyWithVideo(new InputFile(videoFile.stream()));
 			return result;
 		}
 
@@ -91,16 +60,6 @@ bot.on('message::url', async ctx => {
 });
 
 bot.command('help', async ctx => ctx.reply(ctx.t('help')));
-
-bot.command('magic', async ctx => ctx.replyWithVideo(new InputFile('./vid.mp4')));
-
-bot.command('html', async ctx => {
-	let text = '';
-	text += format.bold('Some');
-	text += ' ';
-	text += format.spoiler('HTML');
-	await ctx.reply(text, {parse_mode: format.parse_mode});
-});
 
 const menuMiddleware = new MenuMiddleware('/', menu);
 bot.command('start', async ctx => menuMiddleware.replyToContext(ctx));
@@ -118,8 +77,6 @@ export async function start(): Promise<void> {
 	// The commands you set here will be shown as /commands like /start or /magic in your telegram client.
 	await bot.api.setMyCommands([
 		{command: 'start', description: 'open the menu'},
-		{command: 'magic', description: 'do magic'},
-		{command: 'html', description: 'some html _mode example'},
 		{command: 'help', description: 'show the help'},
 		{command: 'settings', description: 'open the settings'},
 	]);
