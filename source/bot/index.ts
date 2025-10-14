@@ -42,6 +42,7 @@ bot.on('message::url', async ctx => {
 
 		if (url.hostname.endsWith('instagram.com')) {
 			url.hostname = 'kkinstagram.com';
+			url.search = '';
 			return (await ctx.reply(url.toString()));
 		}
 
