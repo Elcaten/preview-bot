@@ -1,4 +1,4 @@
-FROM docker.io/library/alpine:3.22 AS builder
+FROM docker.io/library/alpine:3.23 AS builder
 RUN apk upgrade --no-cache \
 	&& apk add --no-cache npm 
 WORKDIR /build
@@ -8,7 +8,7 @@ COPY . ./
 RUN node_modules/.bin/tsc
 
 
-FROM docker.io/library/alpine:3.22 AS packages
+FROM docker.io/library/alpine:3.23 AS packages
 RUN apk upgrade --no-cache \
 	&& apk add --no-cache npm
 WORKDIR /build
@@ -16,7 +16,7 @@ COPY package.json package-lock.json ./
 RUN npm ci --no-audit --no-fund --no-update-notifier --omit=dev --ignore-scripts
 
 
-FROM docker.io/library/alpine:3.22 AS final
+FROM docker.io/library/alpine:3.23 AS final
 RUN apk upgrade --no-cache \
 	&& apk add --no-cache nodejs 
 
