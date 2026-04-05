@@ -41,13 +41,13 @@ bot.on('message::url', async ctx => {
 		const url = new URL(urlList?.[0] ?? '');
 
 		if (url.hostname.endsWith('instagram.com')) {
-			url.hostname = 'kkinstagram.com';
+			url.hostname = 'kksave.com';
 			url.search = '';
 			return (await ctx.reply(url.toString()));
 		}
 
 		if (url.hostname.endsWith('x.com')) {
-			url.hostname = 'fixupx.com';
+			url.hostname = 'nitter.net';
 			return (await ctx.reply(url.toString()));
 		}
 
