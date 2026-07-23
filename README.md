@@ -1,65 +1,103 @@
-# telegram-typescript-bot-template
+# Preview Bot
 
-> Template for Telegram bots written in TypeScript
+Telegram bot that downloads videos from Instagram links and sends them back as
+playable Telegram videos. X links are currently rewritten to `nitter.net`.
 
-If you haven't written TypeScript before, don't be scared of it.
-It is nearly the same as JavaScript.
-But it provides more helpful information before something goes wrong during the runtime.
+The production image uses
+[`friedrichrehren/yt-dlp:latest`](https://hub.docker.com/r/friedrichrehren/yt-dlp),
+which includes yt-dlp, FFmpeg, and the supporting runtime tools.
 
-I learned a lot about JavaScript itself when I started diving into TypeScript.
+## Requirements
 
-## Install
+- Node.js 22 or newer
+- A Telegram bot token from
+  [@BotFather](https://t.me/BotFather)
+- yt-dlp and FFmpeg on `PATH` when running without Docker
 
-```bash
-npm install
-```
+## Local development
 
-## Start the bot
-
-### Local development
-
-Write to the @BotFather on Telegram and create your bot.
-You will get a token that looks like this: `123:abc`.
-Use it as an environment variable (for example via `export BOT_TOKEN=123:abc`).
-Tip: When you create a separate bot for your development you can use production and development in parallel.
-
-The bot stores persistent data within the `persist` folder.
-So also create this folder before starting it for the first time.
+Install dependencies and create the local configuration:
 
 ```bash
-mkdir persist
+npm ci
+cp .env.example .env
 ```
 
-Then go ahead and start the bot
+Set `BOT_TOKEN` in `.env`, then start the bot:
 
 ```bash
 npm start
 ```
 
-### Production
+Run the compiler, linter, and tests with:
 
-See the Dockerfile.
-You can build a container using it.
-But this repo isn't about containers.
-For more information about them, take a look elsewhere.
+```bash
+npm test
+```
 
-The container is meant to be used with an environment variable named `BOT_TOKEN`.
+Session files are created under `sessions/`.
 
-The container has one volume (`/app/persist`) which will contain persistent data your bot creates.
-Make sure to explicitly use that volume (for example, make sure it's synced or tied to the host in a multi-node setup).
+## Docker
 
-## Basic Folder structure example
+Build the image:
 
-- `source` contains your TypeScript source files. Subfolders contain specifics about your implementation
-  - `bot` may contain files relevant for the telegram bot
-    - `menu` may contain specifics about the bot, the menu that is shown on /start
-  - `magic` may contain something relevant for doing magic. It is not relevant to the bot directly, but it is used by it.
-- `locales` contains translation strings for your bot. That way it can speak multiple languages.
-- `dist` will contain transpiled JavaScript files.
-- `persist` will contain persistent data your bot uses. Make sure to keep that data persistent (Backups for example).
+```bash
+docker build -t preview-bot .
+```
 
-## Improve
+Run it with persistent Telegram sessions:
 
-Do you think something is missing?
-Feel free to add it.
-Then everyone can learn that even easier than before :)
+```bash
+docker run --rm \
+  --env BOT_TOKEN \
+  --volume preview-bot-sessions:/app/sessions \
+  preview-bot
+```
+
+The container runs as a non-root user. Temporary Instagram downloads are
+removed after each Telegram upload or failure.
+
+## Configuration
+
+Only `BOT_TOKEN` is required.
+
+| Variable | Default | Purpose |
+| --- | ---: | --- |
+| `BOT_TOKEN` | required | Telegram bot token |
+| `YTDLP_BINARY_PATH` | `yt-dlp` | yt-dlp executable path |
+| `INSTAGRAM_COOKIES_FILE` | unset | Optional Netscape-format cookies file |
+| `INSTAGRAM_DOWNLOAD_CONCURRENCY` | `2` | Simultaneous download workflows |
+| `INSTAGRAM_DOWNLOAD_QUEUE_SIZE` | `10` | Requests allowed to wait |
+| `INSTAGRAM_QUEUE_TIMEOUT_MS` | `30000` | Maximum queue wait |
+| `INSTAGRAM_DOWNLOAD_TIMEOUT_MS` | `120000` | Maximum yt-dlp runtime |
+| `INSTAGRAM_MAX_VIDEOS` | `10` | Maximum carousel videos |
+
+Numeric settings are validated at startup. The bot limits output to 49 MB per
+video so it remains below Telegram's bot upload limit.
+
+### Optional Instagram cookies
+
+Public Instagram posts should be tried without cookies first. If authentication
+is necessary, mount a cookies file read-only and point the bot to it:
+
+```bash
+docker run --rm \
+  --env BOT_TOKEN \
+  --env INSTAGRAM_COOKIES_FILE=/run/secrets/instagram-cookies.txt \
+  --volume /absolute/path/instagram-cookies.txt:/run/secrets/instagram-cookies.txt:ro \
+  --volume preview-bot-sessions:/app/sessions \
+  preview-bot
+```
+
+Treat the cookies file as a password: do not commit it, include it in an image,
+or expose it in logs.
+
+## Supported Instagram behavior
+
+- Standard URLs and Telegram text links
+- Reels and single-video posts
+- Up to ten videos from carousel posts
+- MP4 output with streaming playback
+- Replies attached to the original Telegram message
+- Clear errors for private, missing, oversized, rate-limited, or timed-out
+  content

@@ -15,14 +15,14 @@
 	"dependencies": {
 		"@grammyjs/i18n": "^1.1.2",
 		"@grammyjs/storage-file": "^2.5.1",
-		"dotenv": "^17.2.3",
-		"grammy": "^1.38.3",
-		"grammy-inline-menu": "^9.2.0",
+		"dotenv": "^17.3.1",
+		"grammy": "^1.40.0",
+		"grammy-inline-menu": "^9.3.0",
 		"telegraf-middleware-console-time": "^3.0.0",
 		"telegram-format": "^3.0.0"
 	},
 	"devDependencies": {
-		"@types/node": "^22.17.2",
+		"@types/node": "^22.19.11",
 		"tsc-watch": "^7.2.0",
 		"typescript": "^5.9.2",
 		"xo": "^1.2.3"
