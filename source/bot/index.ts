@@ -1,14 +1,18 @@
 import {env} from 'node:process';
 import {FileAdapter} from '@grammyjs/storage-file';
 import dotenv from 'dotenv';
-import {Bot, session} from 'grammy';
+import {Bot, InputFile, session} from 'grammy';
 import {MenuMiddleware} from 'grammy-inline-menu';
 import {generateUpdateMiddleware} from 'telegraf-middleware-console-time';
 import {i18n} from '../translation.ts';
+import {configureInstagramDownloader} from './instagram-downloader.ts';
+import {handleInstagramUrl} from './instagram-handler.ts';
 import {menu} from './menu/index.ts';
 import type {MyContext, Session} from './my-context.ts';
+import {findFirstSupportedUrl, isInstagramUrl, isXUrl} from './urls.ts';
 
 dotenv.config();
+configureInstagramDownloader();
 
 const token = env['BOT_TOKEN'];
 if (!token) {
@@ -29,25 +33,36 @@ if (env['NODE_ENV'] !== 'production') {
 	bot.use(generateUpdateMiddleware());
 }
 
-bot.on('message::url', async ctx => {
+bot.on(['message::url', 'message::text_link'], async ctx => {
 	try {
-		const urlList = ctx.message.text?.split(' ').map(x => {
-			try {
-				return new URL(x);
-			} catch {
-				return undefined;
-			}
-		}).filter(Boolean);
-		const url = new URL(urlList?.[0] ?? '');
+		const url = findFirstSupportedUrl(ctx.entities(['url', 'text_link']));
 
-		if (url.hostname.endsWith('instagram.com')) {
-			url.hostname = 'kkinstagram.com';
-			url.search = '';
-			return (await ctx.reply(url.toString()));
+		if (url && isInstagramUrl(url)) {
+			const replyParameters = {
+				message_id: ctx.message.message_id,
+			};
+			await handleInstagramUrl(url, {
+				reportError(error) {
+					console.error('Error processing Instagram video', error);
+				},
+				async sendText(text) {
+					return ctx.reply(text, {reply_parameters: replyParameters});
+				},
+				async sendVideo(path) {
+					return ctx.replyWithVideo(new InputFile(path), {
+						reply_parameters: replyParameters,
+						supports_streaming: true,
+					});
+				},
+				async showUploadActivity() {
+					return ctx.replyWithChatAction('upload_video');
+				},
+			});
+			return;
 		}
 
-		if (url.hostname.endsWith('x.com')) {
-			url.hostname = 'fixupx.com';
+		if (url && isXUrl(url)) {
+			url.hostname = 'nitter.net';
 			return (await ctx.reply(url.toString()));
 		}
 
@@ -72,6 +87,19 @@ bot.catch(error => {
 	console.error('ERROR on handling update occured', error);
 });
 
+let stopRequested = false;
+let stopPromise: Promise<void> | undefined;
+
+export async function stop(): Promise<void> {
+	stopRequested = true;
+	if (!bot.isRunning()) {
+		return;
+	}
+
+	stopPromise ??= bot.stop();
+	await stopPromise;
+}
+
 export async function start(): Promise<void> {
 	// The commands you set here will be shown as /commands like /start or /magic in your telegram client.
 	await bot.api.setMyCommands([
@@ -79,6 +107,10 @@ export async function start(): Promise<void> {
 		{command: 'help', description: 'show the help'},
 		{command: 'settings', description: 'open the settings'},
 	]);
+
+	if (stopRequested) {
+		return;
+	}
 
 	await bot.start({
 		onStart(botInfo) {
