@@ -1,4 +1,4 @@
-FROM docker.io/library/node:22-bookworm-slim AS builder
+FROM docker.io/library/node:26-bookworm-slim AS builder
 WORKDIR /build
 COPY package.json package-lock.json ./
 RUN npm ci --no-audit --no-fund --no-update-notifier --ignore-scripts
@@ -7,7 +7,7 @@ COPY source source
 RUN node_modules/.bin/tsc
 
 
-FROM docker.io/library/node:22-bookworm-slim AS packages
+FROM docker.io/library/node:26-bookworm-slim AS packages
 WORKDIR /build
 COPY package.json package-lock.json ./
 RUN npm ci --no-audit --no-fund --no-update-notifier --omit=dev --ignore-scripts
