@@ -1,13 +1,18 @@
 # Preview Bot
 
-<img width="969" height="453" alt="Screenshot 2026-08-04 at 18 47 43" src="https://github.com/user-attachments/assets/566cb6d4-6c3e-44b7-9e16-e8b1bc69a124" />
-
 Telegram bot that downloads videos from Instagram links and sends them back as
 playable Telegram videos. X links are currently rewritten to `nitter.net`.
 
 The production image uses
 [`friedrichrehren/yt-dlp:latest`](https://hub.docker.com/r/friedrichrehren/yt-dlp),
 which includes yt-dlp, FFmpeg, and the supporting runtime tools.
+
+# Screenshots
+## Instagram
+<img width="969" height="453" alt="Screenshot 2026-08-04 at 18 47 43" src="https://github.com/user-attachments/assets/566cb6d4-6c3e-44b7-9e16-e8b1bc69a124" />
+
+## x.com
+<img width="963" height="677" alt="Screenshot 2026-08-04 at 18 54 22" src="https://github.com/user-attachments/assets/153ffe02-070f-4df7-9b6b-a589d01b385a" />
 
 ## Requirements
 
