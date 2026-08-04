@@ -50,3 +50,53 @@ jobs:
           push: true
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
+
+      - name: Trigger deployment webhook over WireGuard
+        env:
+          DEPLOY_SERVICE: ${{ vars.DEPLOY_SERVICE }}
+          DEPLOY_WEBHOOK_URL: ${{ secrets.DEPLOY_WEBHOOK_URL }}
+          IMAGE_TAG: ${{ steps.meta.outputs.version }}
+          WIREGUARD_CONFIG: ${{ secrets.DEPLOY_WIREGUARD_CONFIG }}
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          if [[ -z "${DEPLOY_WEBHOOK_URL}" ]]; then
+            echo "DEPLOY_WEBHOOK_URL secret is required" >&2
+            exit 1
+          fi
+
+          if [[ -z "${WIREGUARD_CONFIG}" ]]; then
+            echo "DEPLOY_WIREGUARD_CONFIG secret is required" >&2
+            exit 1
+          fi
+
+          sudo apt-get update
+          sudo apt-get install --yes --no-install-recommends wireguard-tools
+
+          wireguard_config="${RUNNER_TEMP}/deploy-wg.conf"
+          umask 077
+          printf '%s\n' "${WIREGUARD_CONFIG}" > "${wireguard_config}"
+
+          cleanup() {
+            sudo wg-quick down "${wireguard_config}" >/dev/null 2>&1 || true
+            rm -f "${wireguard_config}"
+          }
+          trap cleanup EXIT
+
+          sudo wg-quick up "${wireguard_config}"
+
+          service="${DEPLOY_SERVICE:-${GITHUB_REPOSITORY##*/}}"
+          payload="$(
+            jq --compact-output --null-input \
+              --arg service "${service}" \
+              --arg tag "${IMAGE_TAG}" \
+              '{service: $service, tag: $tag}'
+          )"
+
+          curl --fail-with-body --silent --show-error \
+            --connect-timeout 10 \
+            --max-time 60 \
+            --header 'Content-Type: application/json' \
+            --data "${payload}" \
+            "${DEPLOY_WEBHOOK_URL}"

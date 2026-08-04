@@ -57,6 +57,31 @@ docker run --rm \
 The container runs as a non-root user. Temporary Instagram downloads are
 removed after each Telegram upload or failure.
 
+### Deployment webhook
+
+After the container workflow pushes an image to GHCR, it connects to the
+deployment network with WireGuard and sends the image tag to the deployment
+webhook. Configure these GitHub Actions secrets for the repository or its
+deployment environment:
+
+| Secret | Purpose |
+| --- | --- |
+| `DEPLOY_WEBHOOK_URL` | Webhook URL reachable through the WireGuard tunnel |
+| `DEPLOY_WIREGUARD_CONFIG` | Complete WireGuard client configuration for the Actions runner |
+
+The WireGuard peer's `AllowedIPs` must include the webhook host's tunnel IP.
+The optional Actions variable `DEPLOY_SERVICE` selects the webhook service
+name; it defaults to the repository name (`preview-bot`). The webhook receives
+JSON in this form:
+
+```json
+{"service":"preview-bot","tag":"edge"}
+```
+
+Release builds send the semantic version selected by the container metadata
+step instead of `edge`. The workflow stores the WireGuard configuration only
+in a permission-restricted temporary file and removes it after the request.
+
 ## Configuration
 
 Only `BOT_TOKEN` is required.

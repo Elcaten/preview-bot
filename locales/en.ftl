@@ -3,7 +3,7 @@ welcome =
 
   Writing translations for your bot is relatively easy once you know how to write proper fluent files.
 
-help = This is some example help text.
+help = This is not very helpful.
 
 menu-back = back…
 menu-main = main…
