@@ -7,7 +7,7 @@ The production image uses
 [`friedrichrehren/yt-dlp:latest`](https://hub.docker.com/r/friedrichrehren/yt-dlp),
 which includes yt-dlp, FFmpeg, and the supporting runtime tools.
 
-# Screenshots
+## Screenshots
 ## Instagram
 <img width="969" height="453" alt="Screenshot 2026-08-04 at 18 47 43" src="https://github.com/user-attachments/assets/566cb6d4-6c3e-44b7-9e16-e8b1bc69a124" />
 

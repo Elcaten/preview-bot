@@ -37,14 +37,14 @@ await test('reads Instagram download settings', () => {
 await test('rejects invalid Instagram download settings', () => {
 	assert.throws(
 		() => readInstagramDownloadConfig({INSTAGRAM_DOWNLOAD_CONCURRENCY: '0'}),
-		/INSTAGRAM_DOWNLOAD_CONCURRENCY must be between 1 and 10/,
+		/INSTAGRAM_DOWNLOAD_CONCURRENCY must be between 1 and 10/v,
 	);
 	assert.throws(
 		() => readInstagramDownloadConfig({INSTAGRAM_DOWNLOAD_TIMEOUT_MS: 'later'}),
-		/INSTAGRAM_DOWNLOAD_TIMEOUT_MS must be an integer/,
+		/INSTAGRAM_DOWNLOAD_TIMEOUT_MS must be an integer/v,
 	);
 	assert.throws(
 		() => readInstagramDownloadConfig({INSTAGRAM_MAX_VIDEOS: '11'}),
-		/INSTAGRAM_MAX_VIDEOS must be between 1 and 10/,
+		/INSTAGRAM_MAX_VIDEOS must be between 1 and 10/v,
 	);
 });

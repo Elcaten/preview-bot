@@ -20,7 +20,7 @@ function parseUrl(value: string): URL | undefined {
 }
 
 function hasHostname(url: URL, hostname: string): boolean {
-	const normalizedHostname = url.hostname.toLowerCase().replace(/\.$/, '');
+	const normalizedHostname = url.hostname.toLowerCase().replace(/\.$/v, '');
 	const isWebUrl = url.protocol === 'http:' || url.protocol === 'https:';
 	return isWebUrl
 		&& (normalizedHostname === hostname || normalizedHostname.endsWith(`.${hostname}`));

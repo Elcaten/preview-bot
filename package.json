@@ -23,8 +23,9 @@
 	},
 	"devDependencies": {
 		"@types/node": "^22.20.1",
+		"@typescript/native": "npm:typescript@^7.0.2",
 		"tsc-watch": "^7.2.1",
-		"typescript": "^7.0.2",
+		"typescript": "npm:@typescript/typescript6@^6.0.2",
 		"xo": "^4.0.0"
 	},
 	"xo": {

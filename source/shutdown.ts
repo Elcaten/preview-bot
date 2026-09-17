@@ -8,7 +8,7 @@ type ShutdownHandlerOptions = {
 };
 
 export function createShutdownHandler(options: ShutdownHandlerOptions): (
-	signal: ShutdownSignal
+	signal: ShutdownSignal,
 ) => Promise<void> {
 	let shutdownPromise: Promise<void> | undefined;
 

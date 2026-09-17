@@ -31,7 +31,7 @@ async function sendVideos(
 	index = 0,
 ): Promise<void> {
 	const videoPath = videoPaths[index];
-	if (!videoPath) {
+	if (videoPath === undefined) {
 		return;
 	}
 

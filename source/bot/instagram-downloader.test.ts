@@ -32,7 +32,10 @@ function outputPathFromArguments(arguments_: readonly string[]): string {
 	const outputIndex = arguments_.indexOf('--output');
 	assert.notEqual(outputIndex, -1);
 	const outputTemplate = arguments_[outputIndex + 1];
-	assert.ok(outputTemplate);
+	if (outputTemplate === undefined) {
+		assert.fail('expected yt-dlp output template');
+	}
+
 	return outputTemplate.replace('%(id)s.%(ext)s', 'example.mp4');
 }
 
@@ -105,10 +108,16 @@ await test('provides downloaded videos and removes them afterwards', async () =>
 		const result = await withDownloadedInstagramVideos(
 			instagramUrl,
 			async videoPaths => {
-				assert.ok(downloadedPath);
+				if (downloadedPath === undefined) {
+					throw new Error('expected downloaded path');
+				}
+
 				assert.deepEqual(videoPaths, [await realpath(downloadedPath)]);
 				const [videoPath] = videoPaths;
-				assert.ok(videoPath);
+				if (videoPath === undefined) {
+					throw new Error('expected video path');
+				}
+
 				assert.equal(await pathExists(videoPath), true);
 				return 'sent';
 			},
@@ -116,7 +125,7 @@ await test('provides downloaded videos and removes them afterwards', async () =>
 		);
 
 		assert.equal(result, 'sent');
-		await assert.rejects(access(downloadedPath!));
+		await assert.rejects(access(downloadedPath!), {code: 'ENOENT'});
 	} finally {
 		await rm(temporaryRoot, {force: true, recursive: true});
 	}
@@ -140,9 +149,9 @@ await test('removes temporary files when the consumer fails', async () => {
 				},
 				{runner, temporaryRoot},
 			),
-			/upload failed/,
+			/upload failed/v,
 		);
-		await assert.rejects(access(downloadedPath!));
+		await assert.rejects(access(downloadedPath!), {code: 'ENOENT'});
 	} finally {
 		await rm(temporaryRoot, {force: true, recursive: true});
 	}

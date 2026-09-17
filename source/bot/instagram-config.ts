@@ -26,7 +26,7 @@ function integerSetting(
 		return setting.defaultValue;
 	}
 
-	if (!/^\d+$/.test(value)) {
+	if (!/^\d+$/v.test(value)) {
 		throw new Error(`${setting.name} must be an integer`);
 	}
 

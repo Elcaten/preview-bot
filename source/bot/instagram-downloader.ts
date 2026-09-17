@@ -13,7 +13,6 @@ import {
 	resolve,
 } from 'node:path';
 import {env} from 'node:process';
-import {promisify} from 'node:util';
 import {readInstagramDownloadConfig} from './instagram-config.ts';
 import {
 	createTaskLimiter,
@@ -21,8 +20,6 @@ import {
 	TaskLimitError,
 } from './task-limiter.ts';
 import {isInstagramUrl} from './urls.ts';
-
-const execFileAsync = promisify(execFile);
 
 const maximumOutputBytes = 1024 * 1024;
 
@@ -54,8 +51,8 @@ export function configureInstagramDownloader(): void {
 	defaultRuntime = createDefaultRuntime();
 }
 
-type DownloadErrorCode
-	= 'busy' | 'download-failed' | 'no-video' | 'timeout' | 'unsafe-output' | 'unsupported-url';
+type DownloadErrorCode =
+	'busy' | 'download-failed' | 'no-video' | 'timeout' | 'unsafe-output' | 'unsupported-url';
 
 export class InstagramDownloadError extends Error {
 	readonly code: DownloadErrorCode;
@@ -93,14 +90,21 @@ async function runYtDlp(
 	arguments_: readonly string[],
 	timeoutMilliseconds: number,
 ): Promise<ProcessOutput> {
-	const {stdout, stderr} = await execFileAsync(binaryPath, [...arguments_], {
-		encoding: 'utf8',
-		killSignal: 'SIGKILL',
-		maxBuffer: maximumOutputBytes,
-		timeout: timeoutMilliseconds,
-	});
+	return new Promise((onFulfilled, onRejected) => {
+		execFile(binaryPath, [...arguments_], {
+			encoding: 'utf8',
+			killSignal: 'SIGKILL',
+			maxBuffer: maximumOutputBytes,
+			timeout: timeoutMilliseconds,
+		}, (error, stdout, stderr) => {
+			if (error !== null) {
+				onRejected(error instanceof Error ? error : new Error('yt-dlp failed'));
+				return;
+			}
 
-	return {stdout, stderr};
+			onFulfilled({stdout, stderr});
+		});
+	});
 }
 
 export function createYtDlpArguments(
@@ -127,9 +131,9 @@ export function createYtDlpArguments(
 		join(outputDirectory, '%(id)s.%(ext)s'),
 		'--print',
 		'after_move:filepath',
-		...(cookiesFilePath ? ['--cookies', cookiesFilePath] : []),
+		...(cookiesFilePath === undefined ? [] : ['--cookies', cookiesFilePath]),
 		'--',
-		url.toString(),
+		url.href,
 	];
 }
 
@@ -148,7 +152,7 @@ async function validateOutputPaths(
 	maximumFiles: number,
 ): Promise<string[]> {
 	const reportedPaths = stdout
-		.split(/\r?\n/)
+		.split(/\r?\n/v)
 		.map(line => line.trim())
 		.filter(Boolean);
 
@@ -199,8 +203,8 @@ export async function withDownloadedInstagramVideos<Result>(
 
 	const runtime = getDefaultRuntime();
 	const maximumFiles = options.maximumFiles ?? runtime.config.maximumFiles;
-	const timeoutMilliseconds
-		= options.timeoutMilliseconds ?? runtime.config.timeoutMilliseconds;
+	const timeoutMilliseconds =
+		options.timeoutMilliseconds ?? runtime.config.timeoutMilliseconds;
 	const runner = options.runner ?? runYtDlp;
 	try {
 		return await (options.limiter ?? runtime.limiter).run(async () => {
