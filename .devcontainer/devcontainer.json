@@ -1,0 +1,13 @@
+{
+  "name": "preview-bot",
+  "build": {
+    "dockerfile": "Dockerfile"
+  },
+  "remoteUser": "node",
+  "postCreateCommand": "npm ci && (test -f .env || cp .env.example .env)",
+  "customizations": {
+    "vscode": {
+      "extensions": ["samverschueren.linter-xo"]
+    }
+  }
+}
